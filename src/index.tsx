@@ -2,114 +2,184 @@ import {
   ButtonItem,
   PanelSection,
   PanelSectionRow,
-  Navigation,
-  staticClasses
+  staticClasses,
+  Field
 } from "@decky/ui";
 import {
-  addEventListener,
-  removeEventListener,
   callable,
   definePlugin,
-  toaster,
-  // routerHook
+  toaster
 } from "@decky/api"
-import { useState } from "react";
-import { FaShip } from "react-icons/fa";
+import { useState, useEffect } from "react";
+import { FaWifi, FaLock, FaLockOpen } from "react-icons/fa";
 
-// import logo from "../assets/logo.png";
-
-// This function calls the python function "add", which takes in two numbers and returns their sum (as a number)
-// Note the type annotations:
-//  the first one: [first: number, second: number] is for the arguments
-//  the second one: number is for the return value
-const add = callable<[first: number, second: number], number>("add");
-
-// This function calls the python function "start_timer", which takes in no arguments and returns nothing.
-// It starts a (python) timer which eventually emits the event 'timer_event'
-const startTimer = callable<[], void>("start_timer");
+// Define callable functions for WiFi locking operations
+const lockWifi = callable<[], any>("lock_wifi");
+const unlockWifi = callable<[], any>("unlock_wifi");
+const getWifiStatus = callable<[], any>("get_wifi_status");
 
 function Content() {
-  const [result, setResult] = useState<number | undefined>();
+  const [wifiStatus, setWifiStatus] = useState<{
+    locked: boolean;
+    ssid: string | null;
+    bssid: string | null;
+  }>({ locked: false, ssid: null, bssid: null });
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  const onClick = async () => {
-    const result = await add(Math.random(), Math.random());
-    setResult(result);
+  // Function to refresh the WiFi status
+  const refreshWifiStatus = async () => {
+    try {
+      const status = await getWifiStatus();
+      setWifiStatus(status);
+    } catch (error) {
+      console.error("Error getting WiFi status:", error);
+      toaster.toast({
+        title: "Error",
+        body: "Failed to get WiFi status",
+        icon: <FaWifi />,
+        critical: true
+      });
+    }
+  };
+
+  // Load WiFi status on component mount
+  useEffect(() => {
+    refreshWifiStatus();
+  }, []);
+
+  // Handle WiFi locking
+  const handleLockWifi = async () => {
+    setIsLoading(true);
+    try {
+      const result = await lockWifi();
+      if (result.success) {
+        toaster.toast({
+          title: "WiFi Locked",
+          body: `Locked to ${result.ssid}`,
+          icon: <FaLock />
+        });
+        await refreshWifiStatus();
+      } else {
+        toaster.toast({
+          title: "Error",
+          body: result.message,
+          icon: <FaWifi />,
+          critical: true
+        });
+      }
+    } catch (error) {
+      console.error("Error locking WiFi:", error);
+      toaster.toast({
+        title: "Error",
+        body: "Failed to lock WiFi",
+        icon: <FaWifi />,
+        critical: true
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle WiFi unlocking
+  const handleUnlockWifi = async () => {
+    setIsLoading(true);
+    try {
+      const result = await unlockWifi();
+      if (result.success) {
+        toaster.toast({
+          title: "WiFi Unlocked",
+          body: result.message,
+          icon: <FaLockOpen />
+        });
+        await refreshWifiStatus();
+      } else {
+        toaster.toast({
+          title: "Error",
+          body: result.message,
+          icon: <FaWifi />,
+          critical: true
+        });
+      }
+    } catch (error) {
+      console.error("Error unlocking WiFi:", error);
+      toaster.toast({
+        title: "Error",
+        body: "Failed to unlock WiFi",
+        icon: <FaWifi />,
+        critical: true
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <PanelSection title="Panel Section">
-      <PanelSectionRow>
-        <ButtonItem
-          layout="below"
-          onClick={onClick}
-        >
-          {result ?? "Add two numbers via Python"}
-        </ButtonItem>
-      </PanelSectionRow>
-      <PanelSectionRow>
-        <ButtonItem
-          layout="below"
-          onClick={() => startTimer()}
-        >
-          {"Start Python timer"}
-        </ButtonItem>
-      </PanelSectionRow>
-
-      {/* <PanelSectionRow>
-        <div style={{ display: "flex", justifyContent: "center" }}>
-          <img src={logo} />
-        </div>
-      </PanelSectionRow> */}
-
-      {/*<PanelSectionRow>
-        <ButtonItem
-          layout="below"
-          onClick={() => {
-            Navigation.Navigate("/decky-plugin-test");
-            Navigation.CloseSideMenus();
-          }}
-        >
-          Router
-        </ButtonItem>
-      </PanelSectionRow>*/}
+    <PanelSection title="WiFi Locker">
+      {wifiStatus.locked ? (
+        <>
+          <PanelSectionRow>
+            <Field
+              label="Status"
+              description={`Locked to ${wifiStatus.ssid || 'Unknown'}`}
+              icon={<FaLock />}
+            />
+          </PanelSectionRow>
+          <PanelSectionRow>
+            <Field
+              label="BSSID"
+              description={wifiStatus.bssid || 'Unknown'}
+              icon={<FaWifi />}
+            />
+          </PanelSectionRow>
+          <PanelSectionRow>
+            <ButtonItem
+              layout="below"
+              onClick={handleUnlockWifi}
+              disabled={isLoading}
+            >
+              {isLoading ? "Unlocking..." : "Unlock WiFi"}
+            </ButtonItem>
+          </PanelSectionRow>
+        </>
+      ) : (
+        <>
+          <PanelSectionRow>
+            <Field
+              label="Status"
+              description="WiFi is not locked"
+              icon={<FaLockOpen />}
+            />
+          </PanelSectionRow>
+          <PanelSectionRow>
+            <ButtonItem
+              layout="below"
+              onClick={handleLockWifi}
+              disabled={isLoading}
+            >
+              {isLoading ? "Locking..." : "Lock WiFi to Current AP"}
+            </ButtonItem>
+          </PanelSectionRow>
+        </>
+      )}
     </PanelSection>
   );
 };
 
 export default definePlugin(() => {
-  console.log("Template plugin initializing, this is called once on frontend startup")
-
-  // serverApi.routerHook.addRoute("/decky-plugin-test", DeckyPluginRouterTest, {
-  //   exact: true,
-  // });
-
-  // Add an event listener to the "timer_event" event from the backend
-  const listener = addEventListener<[
-    test1: string,
-    test2: boolean,
-    test3: number
-  ]>("timer_event", (test1, test2, test3) => {
-    console.log("Template got timer_event with:", test1, test2, test3)
-    toaster.toast({
-      title: "template got timer_event",
-      body: `${test1}, ${test2}, ${test3}`
-    });
-  });
+  console.log("WiFi Locker plugin initializing")
 
   return {
     // The name shown in various decky menus
-    name: "Test Plugin",
+    name: "WiFi Locker",
     // The element displayed at the top of your plugin's menu
-    titleView: <div className={staticClasses.Title}>Decky Example Plugin</div>,
+    titleView: <div className={staticClasses.Title}>WiFi Locker</div>,
     // The content of your plugin's menu
     content: <Content />,
     // The icon displayed in the plugin list
-    icon: <FaShip />,
+    icon: <FaWifi />,
     // The function triggered when your plugin unloads
     onDismount() {
-      console.log("Unloading")
-      removeEventListener("timer_event", listener);
-      // serverApi.routerHook.removeRoute("/decky-plugin-test");
+      console.log("WiFi Locker unloading")
     },
   };
 });
