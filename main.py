@@ -26,21 +26,43 @@ class Plugin:
         try:
             decky.logger.info("Locking WiFi to current BSSID")
             result = subprocess.run([self.lock_script_path], capture_output=True, text=True)
+            decky.logger.info(f"Lock script exit code: {result.returncode}")
+            decky.logger.info(f"Lock script stdout: {result.stdout}")
+            
+            if result.stderr:
+                decky.logger.error(f"Lock script stderr: {result.stderr}")
             
             if result.returncode == 0:
                 # Parse the JSON output from the script
-                output_data = json.loads(result.stdout.strip())
-                self.current_ssid = output_data.get("ssid")
-                self.current_bssid = output_data.get("bssid")
-                self.wifi_locked = True
-                
-                decky.logger.info(f"WiFi locked to SSID: {self.current_ssid}, BSSID: {self.current_bssid}")
-                return {
-                    "success": True, 
-                    "message": f"WiFi locked to {self.current_ssid}", 
-                    "ssid": self.current_ssid, 
-                    "bssid": self.current_bssid
-                }
+                try:
+                    output_data = json.loads(result.stdout.strip())
+                    self.current_ssid = output_data.get("ssid")
+                    self.current_bssid = output_data.get("bssid")
+                    script_success = output_data.get("success", False)
+                    
+                    # Log raw stdout and stderr for debugging if needed
+                    decky.logger.info(f"Raw script output: {result.stdout}")
+                    if result.stderr:
+                        decky.logger.error(f"Script stderr: {result.stderr}")
+                    
+                    if script_success:
+                        self.wifi_locked = True
+                        decky.logger.info(f"WiFi locked to SSID: {self.current_ssid}, BSSID: {self.current_bssid}")
+                        return {
+                            "success": True, 
+                            "message": f"WiFi locked to {self.current_ssid}", 
+                            "ssid": self.current_ssid, 
+                            "bssid": self.current_bssid
+                        }
+                    else:
+                        decky.logger.error(f"Script reported failure")
+                        return {
+                            "success": False, 
+                            "message": f"Failed to lock WiFi. Check logs for details."
+                        }
+                except json.JSONDecodeError as e:
+                    decky.logger.error(f"Failed to parse script output as JSON: {e}")
+                    return {"success": False, "message": f"Failed to parse script output: {e}", "raw_output": result.stdout}
             else:
                 decky.logger.error(f"Error locking WiFi: {result.stderr}")
                 return {"success": False, "message": f"Error: {result.stderr}"}
@@ -56,19 +78,44 @@ class Plugin:
         try:
             decky.logger.info("Unlocking WiFi from BSSID lock")
             result = subprocess.run([self.unlock_script_path], capture_output=True, text=True)
+            decky.logger.info(f"Unlock script exit code: {result.returncode}")
+            decky.logger.info(f"Unlock script stdout: {result.stdout}")
+            
+            if result.stderr:
+                decky.logger.error(f"Unlock script stderr: {result.stderr}")
             
             if result.returncode == 0:
                 # Parse the JSON output from the script
-                output_data = json.loads(result.stdout.strip())
-                ssid = output_data.get("ssid")
-                
-                decky.logger.info(f"WiFi unlocked from SSID: {self.current_ssid}")
-                self.wifi_locked = False
-                prev_ssid = self.current_ssid
-                self.current_ssid = None
-                self.current_bssid = None
-                
-                return {"success": True, "message": f"WiFi unlocked from {prev_ssid}"}
+                try:
+                    output_data = json.loads(result.stdout.strip())
+                    ssid = output_data.get("ssid")
+                    script_success = output_data.get("success", False)
+                    
+                    # Log raw stdout and stderr for debugging if needed
+                    decky.logger.info(f"Raw script output: {result.stdout}")
+                    if result.stderr:
+                        decky.logger.error(f"Script stderr: {result.stderr}")
+                    
+                    if script_success:
+                        decky.logger.info(f"WiFi unlocked from SSID: {self.current_ssid}")
+                        self.wifi_locked = False
+                        prev_ssid = self.current_ssid
+                        self.current_ssid = None
+                        self.current_bssid = None
+                        
+                        return {
+                            "success": True, 
+                            "message": f"WiFi unlocked from {prev_ssid}"
+                        }
+                    else:
+                        decky.logger.error(f"Script reported failure")
+                        return {
+                            "success": False, 
+                            "message": f"Failed to unlock WiFi. Check logs for details."
+                        }
+                except json.JSONDecodeError as e:
+                    decky.logger.error(f"Failed to parse script output as JSON: {e}")
+                    return {"success": False, "message": f"Failed to parse script output: {e}", "raw_output": result.stdout}
             else:
                 decky.logger.error(f"Error unlocking WiFi: {result.stderr}")
                 return {"success": False, "message": f"Error: {result.stderr}"}

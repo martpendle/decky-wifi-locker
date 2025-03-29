@@ -60,6 +60,8 @@ function Content() {
         });
         await refreshWifiStatus();
       } else {
+        console.error("Lock error details:", result);
+        
         toaster.toast({
           title: "Error",
           body: result.message,
@@ -93,6 +95,8 @@ function Content() {
         });
         await refreshWifiStatus();
       } else {
+        console.error("Unlock error details:", result);
+        
         toaster.toast({
           title: "Error",
           body: result.message,
