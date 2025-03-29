@@ -1,11 +1,12 @@
 {
   "name": "WiFi Locker",
-  "author": "Decky User",
+  "author": "felipejfc",
   "flags": ["debug", "root"],
   "api_version": 1,
+  "version": "1.0.0",
   "publish": {
     "tags": ["wifi", "network", "root"],
     "description": "Lock WiFi to a specific access point to prevent background scanning.",
-    "image": "https://opengraph.githubassets.com/1/SteamDeckHomebrew/PluginLoader"
+    "image": "https://raw.githubusercontent.com/felipejfc/decky-wifi-locker/main/assets/logo.png"
   }
 }
