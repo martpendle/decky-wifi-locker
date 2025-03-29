@@ -118,8 +118,33 @@ function Content() {
   };
 
   return (
-    <PanelSection title="WiFi Locker">
-      {wifiStatus.locked ? (
+    <>
+      <PanelSection title="About WiFi Locker">
+        <PanelSectionRow>
+          <Field
+            label="What This Does"
+            description="Locks your WiFi to the current access point, preventing background scanning."
+            icon={<FaWifi />}
+          />
+        </PanelSectionRow>
+        <PanelSectionRow>
+          <Field
+            label="Benefits"
+            description="Reduces latency spikes during gaming, improves connection stability, and may help save battery life."
+            icon={<FaLock />}
+          />
+        </PanelSectionRow>
+        <PanelSectionRow>
+          <Field
+            label="When To Use"
+            description="Use when you're in a fixed location with a good WiFi signal. Remember to unlock when you move to a different location."
+            icon={<FaLockOpen />}
+          />
+        </PanelSectionRow>
+      </PanelSection>
+
+      <PanelSection title="WiFi Locker">
+        {wifiStatus.locked ? (
         <>
           <PanelSectionRow>
             <Field
@@ -166,6 +191,7 @@ function Content() {
         </>
       )}
     </PanelSection>
+    </>
   );
 };
 
