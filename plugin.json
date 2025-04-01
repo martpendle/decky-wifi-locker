@@ -1,9 +1,9 @@
 {
   "name": "WiFi Locker",
   "author": "felipejfc",
-  "flags": ["debug", "root"],
+  "flags": ["root"],
   "api_version": 1,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "publish": {
     "tags": ["wifi", "network", "root"],
     "description": "Lock WiFi to a specific access point to prevent background scanning.",
