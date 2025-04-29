@@ -164,3 +164,5 @@ class Plugin:
         decky.migrate_runtime(
             os.path.join(decky.DECKY_HOME, "wifi-locker"),
             os.path.join(decky.DECKY_USER_HOME, ".local", "share", "decky-wifi-locker"))
+        os.chmod(self.lock_script_path, 0o755)
+        os.chmod(self.unlock_script_path, 0o755)
