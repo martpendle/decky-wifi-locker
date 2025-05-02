@@ -15,8 +15,8 @@ class Plugin:
     current_bssid = None
     
     # Path to the scripts
-    lock_script_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "backend", "lock_wifi.sh")
-    unlock_script_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "backend", "unlock_wifi.sh")
+    lock_script_path = os.path.join(decky.DECKY_PLUGIN_DIR, "assets", "lock_wifi.sh")
+    unlock_script_path = os.path.join(decky.DECKY_PLUGIN_DIR, "assets", "unlock_wifi.sh")
     
     # Lock WiFi to current BSSID
     async def lock_wifi(self) -> dict:
