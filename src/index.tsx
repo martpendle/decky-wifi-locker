@@ -11,12 +11,13 @@ import {
   toaster
 } from "@decky/api"
 import { useState, useEffect } from "react";
-import { FaWifi, FaLock, FaLockOpen } from "react-icons/fa";
+import { FaWifi, FaLock, FaLockOpen, FaTrash } from "react-icons/fa";
 
 // Define callable functions for WiFi locking operations
 const lockWifi = callable<[], any>("lock_wifi");
 const unlockWifi = callable<[], any>("unlock_wifi");
 const getWifiStatus = callable<[], any>("get_wifi_status");
+const forceDeleteState = callable<[], any>("force_delete_state");
 
 function Content() {
   const [wifiStatus, setWifiStatus] = useState<{
@@ -117,6 +118,48 @@ function Content() {
     }
   };
 
+  // Handle Force Delete State
+  const handleForceDeleteState = async () => {
+    setIsLoading(true);
+    try {
+      const result = await forceDeleteState();
+      if (result.success) {
+        toaster.toast({
+          title: "State Reset",
+          body: result.message,
+          icon: <FaTrash />
+        });
+        // Refresh status after deleting state
+        await refreshWifiStatus(); 
+      } else {
+        toaster.toast({
+          title: "Error",
+          body: result.message,
+          icon: <FaWifi />,
+          critical: true
+        });
+      }
+    } catch (error) {
+      console.error("Error forcing state deletion:", error);
+      toaster.toast({
+        title: "Error",
+        body: "Failed to reset lock state",
+        icon: <FaWifi />,
+        critical: true
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Wrapper function to add a confirmation dialog
+  const handleForceDeleteWithConfirm = () => {
+    // Use standard browser confirm dialog
+    if (window.confirm("Are you sure you want to force delete the WiFi lock state? This should only be used if the plugin state seems incorrect (e.g., shows locked when it shouldn\'t).")) {
+      handleForceDeleteState(); // Call the actual delete function if confirmed
+    }
+  };
+
   return (
     <>
       <PanelSection title="About WiFi Locker">
@@ -190,6 +233,26 @@ function Content() {
           </PanelSectionRow>
         </>
       )}
+    </PanelSection>
+
+    <PanelSection title="Troubleshooting">
+      <PanelSectionRow>
+        <ButtonItem
+          layout="below"
+          onClick={handleForceDeleteWithConfirm}
+          disabled={isLoading}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
+            <FaTrash /> 
+            {isLoading ? "Resetting..." : "Force Reset Lock State"}
+          </div>
+        </ButtonItem>
+      </PanelSectionRow>
+      <PanelSectionRow>
+        <p style={{ fontSize: '0.9em', color: 'gray' }}>
+          Use this if the lock status seems incorrect or stuck.
+        </p>
+      </PanelSectionRow>
     </PanelSection>
     </>
   );
