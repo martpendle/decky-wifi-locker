@@ -1,12 +1,9 @@
 import os
 import json
 import subprocess
-
-# The decky plugin module is located at decky-loader/plugin
-# For easy intellisense checkout the decky-loader code repo
-# and add the `decky-loader/plugin/imports` path to `python.analysis.extraPaths` in `.vscode/settings.json`
-import decky
+import shutil
 import asyncio
+import decky
 
 class Plugin:
     # State to track if WiFi is currently locked
@@ -359,5 +356,12 @@ class Plugin:
         decky.migrate_runtime(
             os.path.join(decky.DECKY_HOME, "wifi-locker"),
             os.path.join(decky.DECKY_USER_HOME, ".local", "share", "decky-wifi-locker"))
+        # If defaults folder exists, this should be a manual install, then we need to copy the scripts to the runtime folder
+
+        if os.path.exists(os.path.join(decky.DECKY_PLUGIN_DIR, "defaults")):
+            decky.logger.info("Copying scripts to runtime folder for manual install.")
+            os.makedirs(decky.DECKY_PLUGIN_RUNTIME_DIR, exist_ok=True)
+            shutil.copy(os.path.join(decky.DECKY_PLUGIN_DIR, "defaults", "assets", "lock_wifi.sh"), self.lock_script_path)
+            shutil.copy(os.path.join(decky.DECKY_PLUGIN_DIR, "defaults", "assets", "unlock_wifi.sh"), self.unlock_script_path)
         os.chmod(self.lock_script_path, 0o755)
         os.chmod(self.unlock_script_path, 0o755)

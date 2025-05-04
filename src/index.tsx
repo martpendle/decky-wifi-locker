@@ -8,7 +8,7 @@ import {
 import {
   callable,
   definePlugin,
-  toaster
+  toaster,
 } from "@decky/api"
 import { useState, useEffect } from "react";
 import { FaWifi, FaLock, FaLockOpen, FaTrash } from "react-icons/fa";
@@ -25,7 +25,9 @@ function Content() {
     ssid: string | null;
     bssid: string | null;
   }>({ locked: false, ssid: null, bssid: null });
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isLocking, setIsLocking] = useState<boolean>(false);
+  const [isUnlocking, setIsUnlocking] = useState<boolean>(false);
+  const [isResetting, setIsResetting] = useState<boolean>(false);
 
   // Function to refresh the WiFi status
   const refreshWifiStatus = async () => {
@@ -50,7 +52,7 @@ function Content() {
 
   // Handle WiFi locking
   const handleLockWifi = async () => {
-    setIsLoading(true);
+    setIsLocking(true);
     try {
       const result = await lockWifi();
       if (result.success) {
@@ -79,13 +81,13 @@ function Content() {
         critical: true
       });
     } finally {
-      setIsLoading(false);
+      setIsLocking(false);
     }
   };
 
   // Handle WiFi unlocking
   const handleUnlockWifi = async () => {
-    setIsLoading(true);
+    setIsUnlocking(true);
     try {
       const result = await unlockWifi();
       if (result.success) {
@@ -114,13 +116,13 @@ function Content() {
         critical: true
       });
     } finally {
-      setIsLoading(false);
+      setIsUnlocking(false);
     }
   };
 
   // Handle Force Delete State
   const handleForceDeleteState = async () => {
-    setIsLoading(true);
+    setIsResetting(true);
     try {
       const result = await forceDeleteState();
       if (result.success) {
@@ -148,15 +150,7 @@ function Content() {
         critical: true
       });
     } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Wrapper function to add a confirmation dialog
-  const handleForceDeleteWithConfirm = () => {
-    // Use standard browser confirm dialog
-    if (window.confirm("Are you sure you want to force delete the WiFi lock state? This should only be used if the plugin state seems incorrect (e.g., shows locked when it shouldn\'t).")) {
-      handleForceDeleteState(); // Call the actual delete function if confirmed
+      setIsResetting(false);
     }
   };
 
@@ -207,9 +201,9 @@ function Content() {
             <ButtonItem
               layout="below"
               onClick={handleUnlockWifi}
-              disabled={isLoading}
+              disabled={isUnlocking || isLocking || isResetting}
             >
-              {isLoading ? "Unlocking..." : "Unlock WiFi"}
+              {isUnlocking ? "Unlocking..." : "Unlock WiFi"}
             </ButtonItem>
           </PanelSectionRow>
         </>
@@ -226,9 +220,9 @@ function Content() {
             <ButtonItem
               layout="below"
               onClick={handleLockWifi}
-              disabled={isLoading}
+              disabled={isLocking || isUnlocking || isResetting}
             >
-              {isLoading ? "Locking..." : "Lock WiFi to Current AP"}
+              {isLocking ? "Locking..." : "Lock WiFi to Current AP"}
             </ButtonItem>
           </PanelSectionRow>
         </>
@@ -237,21 +231,19 @@ function Content() {
 
     <PanelSection title="Troubleshooting">
       <PanelSectionRow>
+        <p style={{ fontSize: '0.95em', fontWeight: 'bold', color: '#ffcc00', textAlign: 'center', marginBottom: '10px' }}>
+          Use this ONLY if the lock status seems incorrect or stuck.
+        </p>
         <ButtonItem
           layout="below"
-          onClick={handleForceDeleteWithConfirm}
-          disabled={isLoading}
+          onClick={handleForceDeleteState}
+          disabled={isResetting || isLocking || isUnlocking}
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
             <FaTrash /> 
-            {isLoading ? "Resetting..." : "Force Reset Lock State"}
+            {isResetting ? "Resetting..." : "Force Reset Lock State"}
           </div>
         </ButtonItem>
-      </PanelSectionRow>
-      <PanelSectionRow>
-        <p style={{ fontSize: '0.9em', color: 'gray' }}>
-          Use this if the lock status seems incorrect or stuck.
-        </p>
       </PanelSectionRow>
     </PanelSection>
     </>
