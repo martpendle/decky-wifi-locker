@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Capture all output to variables
 exec 2> >(tee /tmp/wifi_unlock_error.log)
