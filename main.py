@@ -15,6 +15,13 @@ class Plugin:
     lock_script_path = os.path.join(decky.DECKY_PLUGIN_DIR, "assets", "lock_wifi.sh")
     unlock_script_path = os.path.join(decky.DECKY_PLUGIN_DIR, "assets", "unlock_wifi.sh")
     state_file_path = os.path.join(decky.DECKY_PLUGIN_RUNTIME_DIR, "wifi_lock_state.json")
+
+    def _get_clean_env(self):
+        """Get environment with cleared LD_LIBRARY_PATH to fix decky-loader subprocess issues"""
+        env = os.environ.copy()
+        env["LD_LIBRARY_PATH"] = ""
+
+        return env 
     
     # Lock WiFi to current BSSID
     async def lock_wifi(self) -> dict:
@@ -23,7 +30,7 @@ class Plugin:
         
         try:
             decky.logger.info("Locking WiFi to current BSSID")
-            result = subprocess.run([self.lock_script_path], capture_output=True, text=True)
+            result = subprocess.run([self.lock_script_path], capture_output=True, text=True, env=self._get_clean_env())
             decky.logger.info(f"Lock script exit code: {result.returncode}")
             decky.logger.info(f"Lock script stdout: {result.stdout}")
             
@@ -112,7 +119,7 @@ class Plugin:
         try:
             decky.logger.info(f"Unlocking WiFi from BSSID lock for SSID: {ssid_to_unlock}")
             # Pass the stored SSID to the script
-            result = subprocess.run([self.unlock_script_path, ssid_to_unlock], capture_output=True, text=True)
+            result = subprocess.run([self.unlock_script_path, ssid_to_unlock], capture_output=True, text=True, env=self._get_clean_env())
             decky.logger.info(f"Unlock script exit code: {result.returncode}")
             decky.logger.info(f"Unlock script stdout: {result.stdout}")
             
@@ -228,7 +235,7 @@ class Plugin:
             unlock_attempted = True
             decky.logger.info(f"Attempting to run unlock script for SSID {ssid_to_unlock} before deleting state.")
             try:
-                result = subprocess.run([self.unlock_script_path, ssid_to_unlock], capture_output=True, text=True, timeout=10)
+                result = subprocess.run([self.unlock_script_path, ssid_to_unlock], capture_output=True, text=True, timeout=10, env=self._get_clean_env())
                 decky.logger.info(f"Unlock script exit code during force delete: {result.returncode}")
                 decky.logger.info(f"Unlock script stdout during force delete: {result.stdout}")
                 if result.stderr:
